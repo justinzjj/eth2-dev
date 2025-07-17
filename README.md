@@ -1,6 +1,23 @@
 # eth2-dev
 
-eth 2.0 私链 启动 配置
+## 依赖版本信息
+
+### 软件版本
+
+| 软件   | 版本信息                                  |
+| ------ | ----------------------------------------- |
+| abigen | abigen version 1.14.13-stable             |
+| go     | go version go1.22.10 linux/amd64          |
+| solc   | Version: 0.8.24+commit.e11b9ed9.Linux.g++ |
+
+### 镜像信息
+
+| **组件**          | **镜像版本**                                   |
+| ----------------- | ---------------------------------------------- |
+| Prysm Beacon Node | gcr.io/prysmaticlabs/prysm/beacon-chain:v5.3.2 |
+| Prysm Validator   | gcr.io/prysmaticlabs/prysm/validator:v5.3.2    |
+| Prysm Prysmctl    | gcr.io/prysmaticlabs/prysm/cmd/prysmctl:v5.3.2 |
+| Geth              | ethereum/client-go:v1.14.13                    |
 
 ## 版本信息说明
 
