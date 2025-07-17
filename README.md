@@ -110,7 +110,7 @@ docker logs eth2-dev-geth-1 --tail 100
 - 创世文件：
   - `execution/genesis.json`：负责**执行层创世配置**。
 
-### **1. 全局环境变量（.env **文件）
+### 1. 全局环境变量（.env 文件）
 
 | **变量名**          | **说明**                                                 | **示例**    |
 | ------------------- | -------------------------------------------------------- | ----------- |
@@ -125,7 +125,7 @@ docker logs eth2-dev-geth-1 --tail 100
 | GETH_HTTP_PORT      | Geth JSON-RPC 端口                                       | 18545       |
 | GETH_WS_PORT        | Geth WebSocket 端口                                      | 18546       |
 
-### **2. 集群编排文件（**docker-compose.yml）
+### 2. 集群编排文件（docker-compose.yml）
 
 - **服务划分**：
   - create-beacon-chain-genesis：生成信标链与执行层创世文件
