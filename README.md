@@ -69,33 +69,22 @@
 确保docker 已经安装，然后在根目录下 运行，对于每一次重启，都一定要先运行`./clean.sh`
 
 ```sh
-./clean.sh
-docker compose up -d
+./clean_chain.sh
 ```
 
-可以看到这样的输出
+请先阅读单链的启动说明，再阅读多链的启动说明，并尝试启动
 
-```sh
-[+] Running 8/8
- ⠿ Network eth2-dev_eth-pos-net                      Created
- ⠿ Network eth2-dev_default                          Created
- ⠿ Container eth2-dev-geth-genesis-1                 Exited
- ⠿ Container eth2-dev-create-beacon-chain-genesis-1  Exited
- ⠿ Container eth2-dev-geth-remove-db-1               Exited
- ⠿ Container eth2-dev-geth-1                         Started
- ⠿ Container eth2-dev-beacon-chain-1                 Started
- ⠿ Container eth2-dev-validator-1                    Started
-```
+整体运行逻辑：
+1. 由一个节点运行 `./start_chain.sh -m` 命令，该节点会生成信标链与执行层的创世文件，并启动主节点；
+2. 主节点向其他节点分发创世文件，这两个文件分别是：
+   1. `execution/genesis.json`：执行层的创世文件；
+   2. `consensus/config.yml`：共识层的链参数配置文件
+   3. `execution/genesis.ssz`：执行层的创世文件的
+3. 其他节点运行 `./start_chain.sh -s` 命令，依赖主节点的创世文件，启动从节点；
+   1. 这里在启动前，需要运行`script/check_peer.sh`脚本，获取beacon-chain的初始链接节点信息，并添加到`docker-compose.yml`中；
+   2. 再运行`./start_chain.sh -s` 启动从节点；
 
-最终查看剩余三个docker
-
-然后分别进入log 检查三个docker 的执行情况，无error 信息即可，
-
-```sh
-docker logs eth2-dev-beacon-chain-1  --tail 100
-docker logs eth2-dev-validator-1 --tail 100
-docker logs eth2-dev-geth-1 --tail 100
-```
+具体的启动检查，请参考单节点的启动，这里提供了一个测试脚本 `Test/main.go` 可以配合使用。
 
 ## 关键参数信息说明
 

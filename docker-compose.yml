@@ -1,13 +1,12 @@
 networks:
-  eth2-net:
+  eth-pos-net:
     driver: bridge
     ipam:
       config:
         - subnet: 172.28.0.0/16
-
 services:
-  # Creates a genesis state for the beacon chain using a YAML configuration file and
-  # a deterministic set of 64 validators.
+  # 初始化 Prysm 的共识客户端配置文件和 genesis 状态。
+  # 该配置文件包含了链的参数和 genesis 状态的生成。
   create-beacon-chain-genesis:
     image: "gcr.io/prysmaticlabs/prysm/cmd/prysmctl:v5.3.2"
     command:
@@ -24,46 +23,37 @@ services:
       - ./consensus:/consensus
       - ./execution:/execution
 
-  # Removes the database of the go-ethereum execution client to ensure we start from a clean state.
-  # (geth has a `removedb` option, but it asks for a keyboard confirmation, so we use this instead)
-  geth-remove-db-node1:
-    image: alpine:3.19.0
+  # 移除之前的 go-ethereum 执行客户端的数据库，以确保使用新的 genesis 文件进行初始化。
+  geth-remove-db:
+    image: "alpine:3.19.0"
     command: rm -rf /execution/geth
     volumes:
-      - ./execution/node1:/execution
-    networks:
-      eth2-net:
+      - ./execution:/execution
 
-  geth-remove-db-node2:
-    image: alpine:3.19.0
-    command: rm -rf /execution/geth
-    volumes:
-      - ./execution/node2:/execution
-    networks:
-      eth2-net:
-
-  # Sets up the genesis configuration for the go-ethereum client from a JSON file.
-
-  geth-genesis-node1:
-    image: ethereum/client-go:v1.14.13
+  # 初始化 go-ethereum 执行客户端的数据库，使用之前生成的 genesis 文件。
+  geth-genesis:
+    image: "ethereum/client-go:v1.14.13"
     command: --datadir=/execution init /execution/genesis.json
     volumes:
       - ./execution:/execution
-    networks:
-      eth2-net:
+      - ./execution/genesis.json:/execution/genesis.json
 
-  geth-genesis-node2:
-    image: ethereum/client-go:v1.14.13
-    command: --datadir=/execution init /execution/genesis.json
-    volumes:
-      - ./execution:/execution
-    networks:
-      eth2-net:
-
-  beacon-node1:
-    image: "gcr.io/prysmaticlabs/prysm/beacon-chain:v5.3.2"
+  # 修改权限以确保执行客户端和共识客户端可以访问生成的 genesis 文件。
+  root-change:
+    image: "alpine:3.19.0"
     command:
-      - --datadir=/consensus/node1/beacondata
+      ["/bin/sh", "-c", "chmod -R 777 /execution/ && chmod -R 777 /consensus/"]
+    volumes:
+      - ./execution:/execution
+      - ./consensus:/consensus
+
+  # 运行Prysm的 beacon chain 客户端，使用之前生成的 genesis 状态和配置文件。
+  # 它还连接到 go-ethereum 执行客户端以进行 PoS 共识。
+  beacon-chain:
+    image: "gcr.io/prysmaticlabs/prysm/beacon-chain:v5.3.2"
+    env_file: .env
+    command:
+      - --datadir=/consensus/beacondata
       - --min-sync-peers=0
       - --genesis-state=/consensus/genesis.ssz
       - --bootstrap-node=
@@ -72,136 +62,85 @@ services:
       - --contract-deployment-block=0
       - --chain-id=${CHAIN_ID:-32382}
       - --rpc-host=0.0.0.0
+      - --rpc-port=4000
       - --grpc-gateway-host=0.0.0.0
-      - --grpc-gateway-port=4000
-      - --execution-endpoint=http://geth-node1:8551
+      - --grpc-gateway-port=3500
+      - --execution-endpoint=http://geth:${GETH_ENGINE_PORT}
       - --accept-terms-of-use
-      - --jwt-secret=/execution/node1/jwtsecret
+      - --jwt-secret=/execution/jwtsecret
       - --suggested-fee-recipient=${FEE_RECIPIENT}
       - --minimum-peers-per-subnet=0
       - --enable-debug-rpc-endpoints
       - --force-clear-db
-      - --p2p-host-ip=172.28.0.12
-      - --p2p-tcp-port=13000
-      - --p2p-udp-port=12000
+      - --p2p-host-ip=0.0.0.0
+      - --p2p-tcp-port=9000
+      - --p2p-udp-port=9000
     volumes:
       - ./consensus:/consensus
       - ./execution:/execution
+      - ./execution/jwtsecret:/execution/jwtsecret
     ports:
-      - "13000:13000/tcp"
-      - "12000:12000/udp"
-
+      - "${BEACON_GRPC_PORT}:3500"
+      - "${BEACON_RPC_PORT}:4000"
+      - "${BEACON_P2P_PORT}:9000/udp"
+      - "${BEACON_P2P_PORT}:9000/tcp"
     networks:
-      eth2-net:
+      eth-pos-net:
         ipv4_address: 172.28.0.12
 
-  beacon-node2:
-    image: "gcr.io/prysmaticlabs/prysm/beacon-chain:v5.3.2"
-    command:
-      - --datadir=/consensus/node2/beacondata
-      - --min-sync-peers=0
-      - --genesis-state=/consensus/genesis.ssz
-      - --bootstrap-node=
-      - --interop-eth1data-votes
-      - --chain-config-file=/consensus/config.yml
-      - --contract-deployment-block=0
-      - --chain-id=${CHAIN_ID:-32382}
-      - --rpc-host=0.0.0.0
-      - --grpc-gateway-host=0.0.0.0
-      - --grpc-gateway-port=4001
-      - --execution-endpoint=http://geth-node2:8552
-      - --accept-terms-of-use
-      - --jwt-secret=/execution/node2/jwtsecret
-      - --suggested-fee-recipient=${FEE_RECIPIENT}
-      - --minimum-peers-per-subnet=0
-      - --enable-debug-rpc-endpoints
-      - --force-clear-db
-      - --p2p-host-ip=172.28.0.22
-      - --p2p-tcp-port=13001
-      - --p2p-udp-port=12001
-      - --peer=/ip4/172.28.0.12/tcp/13000/p2p/16Uiu2HAmCYNSynx4Q33BcQiHjyWqYgh55kYayczpjAQWRs7seFtM
-    ports:
-      - "13001:13001/tcp"
-      - "12001:12001/udp"
-    volumes:
-      - ./consensus:/consensus
-      - ./execution:/execution
-    networks:
-      eth2-net:
-        ipv4_address: 172.28.0.22
-
-  geth-node1:
+  # 启动 go-ethereum 执行客户端，连接到 Prysm 的 beacon chain 客户端。
+  # 在端口上 开启p2p、HTTP 和 WebSocket 接口。
+  geth:
     image: "ethereum/client-go:v1.14.13"
+    env_file: .env
     command:
       - --http
       - --http.api=eth,net,web3,engine
       - --http.addr=0.0.0.0
-      - --http.port=8545
+      - --http.port=${GETH_HTTP_PORT}
       - --http.corsdomain=*
       - --ws
       - --ws.api=eth,net,web3,engine
       - --ws.addr=0.0.0.0
-      - --ws.port=8546
+      - --ws.port=${GETH_WS_PORT}
       - --ws.origins=*
       - --authrpc.vhosts=*
       - --authrpc.addr=0.0.0.0
-      - --authrpc.port=8551
-      - --authrpc.jwtsecret=/execution/node1/jwtsecret
-      - --datadir=/execution/node1
+      - --authrpc.port=${GETH_ENGINE_PORT}
+      - --authrpc.jwtsecret=/execution/jwtsecret
+      - --datadir=/execution
       - --allow-insecure-unlock
       - --unlock=${FEE_RECIPIENT}
-      - --password=/execution/node1/geth_password.txt
+      - --password=/execution/geth_password.txt
       - --syncmode=full
-      - --port=10302
+      - --mine
+      - --miner.etherbase=${FEE_RECIPIENT}
+      - --port=${GETH_P2P_PORT}
     volumes:
-      - ./execution/node1:/execution/node1
+      - ./execution:/execution
+      - ./execution/jwtsecret:/execution/jwtsecret
+      - ./execution/geth_password.txt:/execution/geth_password.txt
     ports:
-      - "18545:8545"
-      - "18546:8546"
-      - "18551:8551"
-      - "10302:10302"
+      - "${GETH_HTTP_PORT}:${GETH_HTTP_PORT}"
+      - "${GETH_WS_PORT}:${GETH_WS_PORT}"
+      - "${GETH_ENGINE_PORT}:${GETH_ENGINE_PORT}"
+      - "${GETH_P2P_PORT}:${GETH_P2P_PORT}/udp"
+      - "${GETH_P2P_PORT}:${GETH_P2P_PORT}/tcp"
+    depends_on:
+      geth-genesis:
+        condition: service_completed_successfully
+      beacon-chain:
+        condition: service_started
     networks:
-      eth2-net:
+      eth-pos-net:
         ipv4_address: 172.28.0.11
 
-  geth-node2:
-    image: "ethereum/client-go:v1.14.13"
-    command:
-      - --http
-      - --http.api=eth,net,web3,engine
-      - --http.addr=0.0.0.0
-      - --http.port=8547
-      - --http.corsdomain=*
-      - --ws
-      - --ws.api=eth,net,web3,engine
-      - --ws.addr=0.0.0.0
-      - --ws.port=8548
-      - --ws.origins=*
-      - --authrpc.vhosts=*
-      - --authrpc.addr=0.0.0.0
-      - --authrpc.port=8552
-      - --authrpc.jwtsecret=/execution/node2/jwtsecret
-      - --datadir=/execution/node2
-      - --allow-insecure-unlock
-      - --unlock=${FEE_RECIPIENT}
-      - --password=/execution/node2/geth_password.txt
-      - --syncmode=full
-      - --port=10304
-    volumes:
-      - ./execution/node2:/execution/node2
-    ports:
-      - "18547:8547"
-      - "18548:8548"
-      - "18552:8552"
-      - "10303:10303"
-    networks:
-      eth2-net:
-        ipv4_address: 172.28.0.21
-
+  # 启动 Prysm 的验证者客户端，连接到 beacon chain 客户端。
   validator:
     image: "gcr.io/prysmaticlabs/prysm/validator:v5.3.2"
+    env_file: .env
     command:
-      - --beacon-rpc-provider=beacon-node1:4000
+      - --beacon-rpc-provider=beacon-chain:4000
       - --datadir=/consensus/validatordata
       - --accept-terms-of-use
       - --interop-num-validators=64
@@ -210,6 +149,9 @@ services:
       - --force-clear-db
     volumes:
       - ./consensus:/consensus
+    depends_on:
+      beacon-chain:
+        condition: service_started
     networks:
-      eth2-net:
+      eth-pos-net:
         ipv4_address: 172.28.0.13
