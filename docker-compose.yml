@@ -22,7 +22,7 @@ services:
       - --geth-genesis-json-out=/execution/genesis.json
     volumes:
       - ./consensus:/consensus
-      - ./execution/node1:/execution
+      - ./execution:/execution
 
   # Removes the database of the go-ethereum execution client to ensure we start from a clean state.
   # (geth has a `removedb` option, but it asks for a keyboard confirmation, so we use this instead)
@@ -48,7 +48,7 @@ services:
     image: ethereum/client-go:v1.14.13
     command: --datadir=/execution init /execution/genesis.json
     volumes:
-      - ./execution/node1:/execution
+      - ./execution:/execution
     networks:
       eth2-net:
 
@@ -56,7 +56,7 @@ services:
     image: ethereum/client-go:v1.14.13
     command: --datadir=/execution init /execution/genesis.json
     volumes:
-      - ./execution/node2:/execution
+      - ./execution:/execution
     networks:
       eth2-net:
 
@@ -76,7 +76,7 @@ services:
       - --grpc-gateway-port=4000
       - --execution-endpoint=http://geth-node1:8551
       - --accept-terms-of-use
-      - --jwt-secret=/execution/jwtsecret
+      - --jwt-secret=/execution/node1/jwtsecret
       - --suggested-fee-recipient=${FEE_RECIPIENT}
       - --minimum-peers-per-subnet=0
       - --enable-debug-rpc-endpoints
@@ -86,8 +86,7 @@ services:
       - --p2p-udp-port=12000
     volumes:
       - ./consensus:/consensus
-      - ./execution/node1:/execution
-      - ./execution/node1/jwtsecret:/execution/jwtsecret
+      - ./execution:/execution
     ports:
       - "13000:13000/tcp"
       - "12000:12000/udp"
@@ -112,7 +111,7 @@ services:
       - --grpc-gateway-port=4001
       - --execution-endpoint=http://geth-node2:8552
       - --accept-terms-of-use
-      - --jwt-secret=/execution/jwtsecret
+      - --jwt-secret=/execution/node2/jwtsecret
       - --suggested-fee-recipient=${FEE_RECIPIENT}
       - --minimum-peers-per-subnet=0
       - --enable-debug-rpc-endpoints
@@ -120,14 +119,13 @@ services:
       - --p2p-host-ip=172.28.0.22
       - --p2p-tcp-port=13001
       - --p2p-udp-port=12001
-      - --peer=/ip4/172.28.0.12/tcp/13000/p2p/16Uiu2HAmC7jGu3Xz7j3H19gGFBMUW6tXAEfS1kppSgE44hi5BVza
+      - --peer=/ip4/172.28.0.12/tcp/13000/p2p/16Uiu2HAmCYNSynx4Q33BcQiHjyWqYgh55kYayczpjAQWRs7seFtM
     ports:
       - "13001:13001/tcp"
       - "12001:12001/udp"
     volumes:
       - ./consensus:/consensus
-      - ./execution/node2:/execution
-      - ./execution/node2/jwtsecret:/execution/jwtsecret
+      - ./execution:/execution
     networks:
       eth2-net:
         ipv4_address: 172.28.0.22
@@ -148,21 +146,20 @@ services:
       - --authrpc.vhosts=*
       - --authrpc.addr=0.0.0.0
       - --authrpc.port=8551
-      - --authrpc.jwtsecret=/execution/jwtsecret
-      - --datadir=/execution
+      - --authrpc.jwtsecret=/execution/node1/jwtsecret
+      - --datadir=/execution/node1
       - --allow-insecure-unlock
       - --unlock=${FEE_RECIPIENT}
-      - --password=/execution/geth_password.txt
-      - --nodiscover
+      - --password=/execution/node1/geth_password.txt
       - --syncmode=full
+      - --port=10302
     volumes:
-      - ./execution/node1:/execution
-      - ./execution/node1/jwtsecret:/execution/jwtsecret
-      - ./execution/node1/geth_password.txt:/execution/geth_password.txt
+      - ./execution/node1:/execution/node1
     ports:
       - "18545:8545"
       - "18546:8546"
       - "18551:8551"
+      - "10302:10302"
     networks:
       eth2-net:
         ipv4_address: 172.28.0.11
@@ -183,21 +180,20 @@ services:
       - --authrpc.vhosts=*
       - --authrpc.addr=0.0.0.0
       - --authrpc.port=8552
-      - --authrpc.jwtsecret=/execution/jwtsecret
-      - --datadir=/execution
+      - --authrpc.jwtsecret=/execution/node2/jwtsecret
+      - --datadir=/execution/node2
       - --allow-insecure-unlock
       - --unlock=${FEE_RECIPIENT}
-      - --password=/execution/geth_password.txt
-      - --nodiscover
+      - --password=/execution/node2/geth_password.txt
       - --syncmode=full
+      - --port=10304
     volumes:
-      - ./execution/node2:/execution
-      - ./execution/node2/jwtsecret:/execution/jwtsecret
-      - ./execution/node2/geth_password.txt:/execution/geth_password.txt
+      - ./execution/node2:/execution/node2
     ports:
       - "18547:8547"
       - "18548:8548"
       - "18552:8552"
+      - "10303:10303"
     networks:
       eth2-net:
         ipv4_address: 172.28.0.21
