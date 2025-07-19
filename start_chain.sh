@@ -4,7 +4,7 @@
  # @filename: 
  # @version: 
  # @Description: 
- # @LastEditTime: 2025-07-18 09:51:38
+ # @LastEditTime: 2025-07-19 05:58:02
 ### 
 #!/bin/bash
 -set -e
@@ -29,6 +29,12 @@ distribute_info() {
 
 # 函数：启动分节点
 start_sub_node() {
+  # 检查是否存在 genesis 文件
+  if [ ! -f "./consensus/genesis.ssz" ]; then
+    echo "❌ 错误：未找到 genesis.ssz 文件，请先运行主节点生成该文件。"
+    exit 1
+  fi
+
   echo "🚀 启动分节点..."
   docker compose up geth-genesis -d
   docker compose up beacon-chain -d
