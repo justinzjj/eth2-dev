@@ -4,12 +4,24 @@
  # @filename: 
  # @version: 
  # @Description: 
- # @LastEditTime: 2025-07-18 09:49:52
+ # @LastEditTime: 2025-07-23 07:54:38
 ### 
 #!/bin/bash
 # 自定义目标节点IP（可通过参数传入）
-TARGET_IP="${1:-123.57.178.7}"
-TARGET_PORT="${2:-60015}"
+ENV_PATH="../.env"
+if [ -f "$ENV_PATH" ]; then
+  echo "📥 加载环境变量：$ENV_PATH"
+  set -o allexport
+  source "$ENV_PATH"
+  set +o allexport
+else
+  echo "❌ 未找到环境变量文件：$ENV_PATH"
+  exit 1
+fi
+
+
+TARGET_IP="$PUBLIC_IP"
+TARGET_PORT="$BEACON_GRPC_PORT"
 
 # 查询目标 Beacon 节点的身份信息
 response=$(curl -s "http://${TARGET_IP}:${TARGET_PORT}/eth/v1/node/identity")
