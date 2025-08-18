@@ -4,7 +4,7 @@
  # @filename: 
  # @version: 
  # @Description: 
- # @LastEditTime: 2025-07-23 07:54:38
+ # @LastEditTime: 2025-08-13 08:33:51
 ### 
 #!/bin/bash
 # 自定义目标节点IP（可通过参数传入）
@@ -56,3 +56,5 @@ EOF
 
 # 可选：打印提示信息
 echo "✅ 已生成 --peer 参数: ${peer_argument}"
+peer_argument_replaced=$(echo "$peer_argument" | sed 's#10\.250\.0\.12/tcp/9000#123.57.178.7/tcp/60016#')
+echo "✅ 替换后的 Peer 参数: ${peer_argument_replaced}"

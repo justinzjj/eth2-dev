@@ -76,10 +76,10 @@
 
 整体运行逻辑：
 1. 由一个节点运行 `./start_chain.sh -m` 命令，该节点会生成信标链与执行层的创世文件，并启动主节点；
-2. 主节点向其他节点分发创世文件，这两个文件分别是：
+2. 主节点向其他节点分发创世文件，这三个文件分别是：
    1. `execution/genesis.json`：执行层的创世文件；
-   2. `consensus/config.yml`：共识层的链参数配置文件
-   3. `execution/genesis.ssz`：执行层的创世文件的
+   2. `execution/genesis.ssz`：执行层的创世文件的
+   3. `consensus/config.yml`：共识层的链参数配置文件
 3. 其他节点运行 `./start_chain.sh -s` 命令，依赖主节点的创世文件，启动从节点；
    1. 这里在启动前，需要运行`script/check_peer.sh`脚本，获取beacon-chain的初始链接节点信息，并添加到`docker-compose.yml`中；
    2. 再运行`./start_chain.sh -s` 启动从节点；
