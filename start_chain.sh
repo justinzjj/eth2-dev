@@ -23,7 +23,7 @@ start_main_node() {
 # 函数：分发节点信息
 distribute_info() {
   echo "🔄 分发节点信息..."
-  ./script/send_info.sh
+  cd script && ./send_info.sh
   echo "✅ 节点信息已分发！"
 }
 
