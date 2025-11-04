@@ -1,6 +1,6 @@
 {
 	"config": {
-		"chainId": 32382,
+		"chainId": 10006,
 		"homesteadBlock": 0,
 		"daoForkSupport": true,
 		"eip150Block": 0,
@@ -15,13 +15,13 @@
 		"londonBlock": 0,
 		"arrowGlacierBlock": 0,
 		"grayGlacierBlock": 0,
-		"shanghaiTime": 1752732295,
-		"cancunTime": 1772141191,
+		"shanghaiTime": 1762239588,
+		"cancunTime": 1781648484,
 		"terminalTotalDifficulty": 0,
 		"depositContractAddress": "0x0000000000000000000000000000000000000000"
 	},
 	"nonce": "0x0",
-	"timestamp": "0x68789287",
+	"timestamp": "0x6909a464",
 	"extraData": "0x0000000000000000000000000000000000000000000000000000000000000000123463a4b065722e99115d6c222f267d9cabb5240000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
 	"gasLimit": "0x7a1200",
 	"difficulty": "0x1",
